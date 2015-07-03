@@ -121,19 +121,36 @@ if ($result) {
             $shift = $nsd->compare($start_date, $nsd);
             if ($shift < 1) {
                 
-                //$obj->task_start_date = $nsd->format(FMT_DATETIME_MYSQL);
-                $osd = new w2p_Utilities_Date($obj->task_start_date);
-                $ned = new w2p_Utilities_Date($obj->task_end_date);
-
-                $dur=-$ned->calcDuration($osd);
+               //Date should be in local time so addDuration could effectively compares with day_cal_start constant!	
+            	//$obj->task_start_date = $nsd->format(FMT_DATETIME_MYSQL);
+                $osd = new w2p_Utilities_Date($AppUI->formatTZAwareTime($obj->task_start_date, '%Y-%m-%d %T'));
+                $ned = new w2p_Utilities_Date($AppUI->formatTZAwareTime($obj->task_end_date, '%Y-%m-%d %T'));
+		$nsd = new w2p_Utilities_Date($AppUI->formatTZAwareTime($obj->get_deps_max_end_date($obj), '%Y-%m-%d %T'));
+                
+                
+               	$dur=-$ned->calcDuration($osd);
+                
                 $ned->copy($nsd);
                 $ned->addDuration($dur,1);
+                
+                
+                
+                $tempNed = new w2p_Utilities_Date();
+                
+		$tempNsd->copy($ned);
+                $tempNsd->addDuration(-$dur,1);
+                
+                $nsd->copy($tempNsd);
+                
+                //Reconvert date to GTM to update database!
+                $nsd = $AppUI->convertToSystemTZ($nsd->format(FMT_DATETIME_MYSQL));
+                $ned = $AppUI->convertToSystemTZ($ned->format(FMT_DATETIME_MYSQL));
+                
+                //$new_start_date = $nsd->format(FMT_DATETIME_MYSQL);
+                $obj->task_start_date =  $nsd;//$new_start_date;//$AppUI->formatTZAwareTime($new_start_date, '%Y-%m-%d %T');
 
-                $new_start_date = $nsd->format(FMT_DATETIME_MYSQL);
-                $obj->task_start_date = $AppUI->formatTZAwareTime($new_start_date, '%Y-%m-%d %T');
-
-                $new_end_date = $ned->format(FMT_DATETIME_MYSQL);
-                $obj->task_end_date = $AppUI->formatTZAwareTime($new_end_date, '%Y-%m-%d %T');
+                //$new_end_date = $ned->format(FMT_DATETIME_MYSQL);
+                $obj->task_end_date = $ned;//$new_end_date;//$AppUI->formatTZAwareTime($new_end_date, '%Y-%m-%d %T');
 
                 $obj->store();
             }
